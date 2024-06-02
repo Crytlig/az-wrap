@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - v*.*.*
+  workflow_dispatch:
 
 jobs:
   create-release:
@@ -15,7 +16,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.1"
 
       - name: Set version from go to makefile
         run: |
@@ -25,11 +28,6 @@ jobs:
 
       - name: Make Release Dir
         run: mkdir bin
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.20.0
 
       # TODO: Add some more steps to update release notes if tag already exists
       # Check if the newest tag already exists
@@ -50,6 +48,7 @@ jobs:
       # if {{ steps.check-tag-exists.outputs.exists == 'false'}}
       - name: Create az-wrap Release
         uses: softprops/action-gh-release@v1
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
