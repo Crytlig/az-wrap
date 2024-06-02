@@ -1,0 +1,58 @@
+name: release-and-publish
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  create-release:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+
+      - name: Set version from go to makefile
+        run: |
+          version=$(cat version.go | awk -F'"' '{print $2}' | tr -d '\n' )
+          echo "Version: $version"
+          echo "AZ_WRAP=$version" >> $GITHUB_ENV
+
+      - name: Make Release Dir
+        run: mkdir bin
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.20.0
+
+      # TODO: Add some more steps to update release notes if tag already exists
+      # Check if the newest tag already exists
+      # - name: Check if tag exist
+      #   uses: mukunku/tag-exists-action@9afafd1bf326f2957ca13d67122d44d5681e432b
+      #   id: check-tag-exists
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag: ${{ github.ref_name }}
+
+      # Build Binaries if this is a new release
+      # if {{ steps.check-tag-exists.outputs.exists == 'false' }}
+      - name: Build az-wrap Release Binaries
+        run: make build-all
+
+      # Create Release with artifacts
+      # if {{ steps.check-tag-exists.outputs.exists == 'false'}}
+      - name: Create az-wrap Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          generate_release_notes: true
+          files: |
+            ./bin/*
