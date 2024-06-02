@@ -2,62 +2,43 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/fatih/color"
+	"github.com/rodaine/table"
 )
 
 func main() {
-	aliasFile()
-	getSubscriptions()
-}
+	aliases := SubscriptionAliases()
+	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
-func aliasFile() []byte {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println("Error finding home directory:", err)
-		return nil
+	tbl := table.New("Index", "Alias", "Name", "ID")
+	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+	for _, s := range aliases {
+		id := s.ID
+		if s.Selected {
+			id = color.New(color.BgBlue, color.FgWhite).Sprint(id)
+		}
+		tbl.AddRow(s.Index, s.Alias, s.Name, id)
 	}
+	tbl.Print()
+	var selection string
+	color.New(color.FgGreen).Print("\nEnter Index, Alias, Name or ID to select: ")
+	fmt.Scan(&selection)
+	selection = strings.ToLower(selection)
 
-	path := filepath.Join(home, ".azure_aliases")
-	aliases, err := os.ReadFile(path)
-
-	if err != nil {
-		createAliasesFile(path)
+	for _, s := range aliases {
+		if selection == strconv.Itoa(s.Index) ||
+			selection == strings.ToLower(s.Alias) ||
+			selection == strings.ToLower(s.Name) ||
+			selection == strings.ToLower(s.ID) {
+			fmt.Printf("Selected %s with ID %s\n", s.Name, s.ID)
+			SetSubscription(s.ID)
+			os.Exit(0)
+		}
 	}
-	return aliases
-}
-
-func createAliasesFile(filePath string) {
-	content := []byte("# Azure Aliases\n")
-	err := os.WriteFile(filePath, content, 0644)
-	if err != nil {
-		log.Fatalln("Error creating file:", err)
-	}
-}
-
-func checkCli() string {
-	path, err := exec.LookPath("az")
-	if err != nil {
-		log.Fatalf("Unable to locate %v", err)
-	}
-	return path
-}
-
-func getSubscriptions() []byte {
-	var cmd *exec.Cmd
-	path := checkCli()
-
-	fmt.Println("CLI", path)
-
-	cmd = exec.Command(path, "account", "list", "--query", "'[].{id:id, name:name}", "-o", "tsv")
-	out, err := cmd.Output()
-	if err != nil {
-		log.Fatalf("Could not execute command %v", err)
-	}
-	fmt.Println(string(out))
-
-	return out
-
+	fmt.Println("No subscriptions found")
 }
