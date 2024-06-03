@@ -55,8 +55,3 @@ func main() {
 	}
 	fmt.Println("No subscriptions found")
 }
-
-func addAlias() {
-
-	return
-}
