@@ -7,9 +7,18 @@ import (
 	"strings"
 )
 
-// TODO: Implement as part of --alias flag or arg
-func SaveAliasFile(file, subscriptionId, alias string) {
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func SaveAliasFile(subscriptionId, alias string) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("Error finding home directory:", err)
+		return
+	}
+	aliasFile, err := checkAliasFile(homeDir)
+	if aliasFile == "" {
+		createAliasFile(aliasFile)
+	}
+
+	f, err := os.OpenFile(aliasFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println("Error opening alias file:", err)
 		return

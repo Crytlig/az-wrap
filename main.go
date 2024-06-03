@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -11,6 +13,17 @@ import (
 )
 
 func main() {
+	alias := flag.String("alias", "", "Set a subscription alias by <subscriptionId>:<alias>")
+	flag.Parse()
+	if *alias != "" {
+		parts := strings.SplitN(*alias, ":", 2)
+		if len(parts) != 2 {
+			log.Fatalln("Invalid alias format. Use <subscriptionId>:<alias>")
+		}
+		SaveAliasFile(parts[0], parts[1])
+		os.Exit(0)
+	}
+
 	aliases := SubscriptionAliases()
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
@@ -41,4 +54,9 @@ func main() {
 		}
 	}
 	fmt.Println("No subscriptions found")
+}
+
+func addAlias() {
+
+	return
 }
