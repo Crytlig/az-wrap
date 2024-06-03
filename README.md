@@ -1,6 +1,6 @@
 # az-wrap
 
-Just some pretty printing and upcoming TUI work around the Azure CLI. Mostly developing it for fun... And personal usefulnes
+Just some pretty printing and upcoming TUI work around the Azure CLI. Mostly developing it for fun... And personal usefulness
 
 Currently, only viewing and selecting a subscription is implemented. Very rough around the edges, and could be better in a lot of ways, but it gets the job done.
 
