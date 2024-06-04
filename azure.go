@@ -102,6 +102,7 @@ func getSubscriptionsFromFile() ([]loadedSubscriptions, error) {
 	}
 
 	// The file is encoded with UTF-8 BOM for some reason
+	// https://stackoverflow.com/questions/31398044/got-error-invalid-character-%C3%AF-looking-for-beginning-of-value-from-json-unmar
 	file = bytes.TrimPrefix(file, []byte("\xef\xbb\xbf")) // Or []byte{239, 187, 191}
 
 	// azureProfile.json contains additional fields
