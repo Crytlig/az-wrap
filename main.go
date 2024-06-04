@@ -15,12 +15,17 @@ import (
 
 func main() {
 	ctx := context.Background()
+	cfg, err := newConfig()
+	if err != nil {
+		log.Fatalf("Error initializing config: %v", err)
+	}
+
 	alias := parseFlags()
-	if err := handleAliasFlag(alias); err != nil {
+	if err := handleAliasFlag(cfg, alias); err != nil {
 		log.Fatalln(err)
 	}
 
-	aliases, err := subscriptionAliases()
+	aliases, err := cfg.subscriptionAliases()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -28,7 +33,7 @@ func main() {
 	displayAliases(aliases)
 
 	selection := promptUserForSelection()
-	if err := selectSubscription(ctx, aliases, selection); err != nil {
+	if err := selectSubscription(ctx, cfg, aliases, selection); err != nil {
 		fmt.Println("No subscriptions found")
 	}
 }
@@ -39,13 +44,13 @@ func parseFlags() string {
 	return *alias
 }
 
-func handleAliasFlag(alias string) error {
+func handleAliasFlag(cfg *config, alias string) error {
 	if alias != "" {
 		parts := strings.SplitN(alias, ":", 2)
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid alias format. Use <subscriptionId>:<alias>")
 		}
-		if err := saveAliasFile(parts[0], parts[1]); err != nil {
+		if err := cfg.saveAliasFile(parts[0], parts[1]); err != nil {
 			return fmt.Errorf("error saving alias: %w", err)
 		}
 		os.Exit(0)
@@ -76,14 +81,14 @@ func promptUserForSelection() string {
 	return strings.ToLower(selection)
 }
 
-func selectSubscription(ctx context.Context, aliases []subscriptionAlias, selection string) error {
+func selectSubscription(ctx context.Context, cfg *config, aliases []subscriptionAlias, selection string) error {
 	for _, s := range aliases {
 		if selection == strconv.Itoa(s.Index) ||
 			selection == strings.ToLower(s.Alias) ||
 			selection == strings.ToLower(s.Name) ||
 			selection == strings.ToLower(s.ID) {
 			fmt.Printf("Selected %s with ID %s\n", s.Name, s.ID)
-			if err := setSubscription(ctx, s.ID); err != nil {
+			if err := cfg.setSubscription(ctx, s.ID); err != nil {
 				return err
 			}
 			os.Exit(0)
