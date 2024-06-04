@@ -16,7 +16,7 @@ import (
 func main() {
 	ctx := context.Background()
 	alias := parseFlags()
-	if err := handleAliasFlag(ctx, alias); err != nil {
+	if err := handleAliasFlag(alias); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -39,7 +39,7 @@ func parseFlags() string {
 	return *alias
 }
 
-func handleAliasFlag(ctx context.Context, alias string) error {
+func handleAliasFlag(alias string) error {
 	if alias != "" {
 		parts := strings.SplitN(alias, ":", 2)
 		if len(parts) != 2 {
