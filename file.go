@@ -4,55 +4,62 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-func SaveAliasFile(subscriptionId, alias string) {
+// saveAliasFile saves the alias to a file
+func saveAliasFile(subscriptionId, alias string) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println("Error finding home directory:", err)
-		return
-	}
-	aliasFile, err := checkAliasFile(homeDir)
-	if aliasFile == "" {
-		createAliasFile(aliasFile)
+		return fmt.Errorf("error finding home directory: %w", err)
 	}
 
+	aliasFile, err := checkAliasFile(homeDir)
+	if err != nil {
+		if err := createAliasFile(aliasFile); err != nil {
+			return fmt.Errorf("error creating alias file: %w", err)
+		}
+	}
+
+	if err := writeAliasToFile(aliasFile, subscriptionId, alias); err != nil {
+		return fmt.Errorf("error writing to alias file: %w", err)
+	}
+
+	fmt.Printf("Alias '%s' added for subscription ID '%s'.\n", alias, subscriptionId)
+	return nil
+}
+
+func writeAliasToFile(aliasFile, subscriptionId, alias string) error {
 	f, err := os.OpenFile(aliasFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error opening alias file:", err)
-		return
+		return fmt.Errorf("error opening alias file: %w", err)
 	}
 	defer f.Close()
 
 	if _, err := f.WriteString(subscriptionId + ":" + alias + "\n"); err != nil {
-		fmt.Println("Error writing to alias file", err)
-	} else {
-		fmt.Printf("Alias '%s' added for subscription ID '%s'. \n", alias, subscriptionId)
+		return fmt.Errorf("error writing to alias file: %w", err)
 	}
+	return nil
 }
 
-// Stupid simple implementation. Maybe the full json object might be better
-// For now this works subscriptionID:alias
-func LoadAliases() map[string]string {
+// loadAliases loads aliases from the alias file
+func loadAliases() (map[string]string, error) {
 	aliases := make(map[string]string)
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return aliases
+		return aliases, fmt.Errorf("error finding home directory: %w", err)
 	}
 
 	file, err := checkAliasFile(homeDir)
 	if err != nil {
-		createAliasFile(file)
-		return aliases
+		return aliases, nil // No aliases file is not a hard error
 	}
 
 	f, err := os.Open(file)
-
 	if err != nil {
-		fmt.Println(err)
-		return aliases
+		return aliases, fmt.Errorf("error opening alias file: %w", err)
 	}
 	defer f.Close()
 
@@ -64,24 +71,24 @@ func LoadAliases() map[string]string {
 			aliases[parts[0]] = parts[1]
 		}
 	}
-	return aliases
+	return aliases, scanner.Err()
 }
 
+// checkAliasFile checks if the alias file exists and returns its path
 func checkAliasFile(homeDir string) (string, error) {
-	azureDir := fmt.Sprintf("%s/.azure", homeDir)
-	if _, err := os.Stat(azureDir); os.IsNotExist(err) {
-		return "", err
+	aliasPath := filepath.Join(homeDir, ".azure", "aliases")
+	if _, err := os.Stat(aliasPath); os.IsNotExist(err) {
+		return aliasPath, err
 	}
-
-	aliasPath := fmt.Sprintf("%s/aliases", azureDir)
 	return aliasPath, nil
 }
 
-func createAliasFile(file string) {
+// createAliasFile creates the alias file
+func createAliasFile(file string) error {
 	f, err := os.Create(file)
 	if err != nil {
-		fmt.Println("Error creating alias file:", err)
-		return
+		return fmt.Errorf("error creating alias file: %w", err)
 	}
 	defer f.Close()
+	return nil
 }

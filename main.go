@@ -20,11 +20,11 @@ func main() {
 		if len(parts) != 2 {
 			log.Fatalln("Invalid alias format. Use <subscriptionId>:<alias>")
 		}
-		SaveAliasFile(parts[0], parts[1])
+		saveAliasFile(parts[0], parts[1])
 		os.Exit(0)
 	}
 
-	aliases := SubscriptionAliases()
+	aliases := subscriptionAliases()
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
@@ -49,7 +49,7 @@ func main() {
 			selection == strings.ToLower(s.Name) ||
 			selection == strings.ToLower(s.ID) {
 			fmt.Printf("Selected %s with ID %s\n", s.Name, s.ID)
-			SetSubscription(s.ID)
+			setSubscription(s.ID)
 			os.Exit(0)
 		}
 	}

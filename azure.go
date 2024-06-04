@@ -23,9 +23,12 @@ type SubscriptionAlias struct {
 	Selected bool
 }
 
-func SubscriptionAliases() []SubscriptionAlias {
+func subscriptionAliases() []SubscriptionAlias {
 	subs := subscriptions()
-	aliases := LoadAliases()
+	aliases, err := loadAliases()
+	if err != nil {
+		fmt.Printf("err with loading aliases, in subscription aliases, %v", err)
+	}
 
 	var subscriptionAliases []SubscriptionAlias
 	for i, sub := range subs {
@@ -45,7 +48,7 @@ func SubscriptionAliases() []SubscriptionAlias {
 	return subscriptionAliases
 }
 
-func SetSubscription(ID string) {
+func setSubscription(ID string) {
 	path, err := azureCLIPath()
 	if err != nil {
 		log.Fatalf("Unable to use the Azure CLI for setting subscription: %v", err)
