@@ -8,9 +8,6 @@ import (
 	"time"
 )
 
-// TODO: Fix the config when testing,
-// it should not use the default paths
-// Implement overriding maybe?
 func TestNewConfig(t *testing.T) {
 	_, err := newConfig()
 	if err != nil {
@@ -81,8 +78,7 @@ func TestSetSubscription(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// This is a dummy test; normally you would mock external dependencies.
-	subscriptionID := "some-subscription-id"
+	subscriptionID := "1234abcd-efgh-4321-1234-ijkl567812"
 	err = c.setSubscription(ctx, subscriptionID)
 	if err == nil {
 		t.Fatalf("Expected error when setting subscription with dummy ID, got none")
@@ -95,12 +91,11 @@ func TestGetSubscriptionsFromFile(t *testing.T) {
 		t.Fatalf("Failed to create new config: %v", err)
 	}
 
-	// Use a temporary file for testing
 	tempDir := t.TempDir()
 	c.homeDir = tempDir
-	azureProfilePath := filepath.Join(tempDir, ".azure", "azureProfile.json")
+	c.azureProfile = filepath.Join(tempDir, ".azure", "azureProfile.json")
 
-	// Create dummy azureProfile.json
+	// Simple json.. For now no need for struct marhsalling..
 	profileContent := `{
 		"subscriptions": [
 			{
@@ -110,8 +105,9 @@ func TestGetSubscriptionsFromFile(t *testing.T) {
 			}
 		]
 	}`
-	os.MkdirAll(filepath.Dir(azureProfilePath), 0755)
-	err = os.WriteFile(azureProfilePath, []byte(profileContent), 0644)
+
+	os.MkdirAll(filepath.Dir(c.azureProfile), 0755)
+	err = os.WriteFile(c.azureProfile, []byte(profileContent), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write dummy azureProfile.json: %v", err)
 	}
@@ -132,12 +128,10 @@ func TestAliases(t *testing.T) {
 		t.Fatalf("Failed to create new config: %v", err)
 	}
 
-	// Use a temporary file for testing
 	tempDir := t.TempDir()
 	c.homeDir = tempDir
 	aliasFile := filepath.Join(tempDir, ".azure", "aliases")
 
-	// Create dummy alias file
 	aliasContent := "test-subscription-id:test-alias\n"
 	os.MkdirAll(filepath.Dir(aliasFile), 0755)
 	err = os.WriteFile(aliasFile, []byte(aliasContent), 0644)
