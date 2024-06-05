@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 type loadedSubscriptions struct {
@@ -27,9 +29,11 @@ type subscriptionAlias struct {
 	Selected bool
 }
 
-// Config holds common configuration
 type config struct {
-	homeDir string
+	homeDir      string
+	azureDir     string
+	aliasFile    string
+	azureProfile string
 }
 
 func newConfig() (*config, error) {
@@ -37,7 +41,14 @@ func newConfig() (*config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to find home directory: %w", err)
 	}
-	return &config{homeDir: homeDir}, nil
+
+	azureDir := filepath.Join(homeDir, ".azure")
+	return &config{
+		homeDir:      homeDir,
+		azureDir:     azureDir,
+		azureProfile: filepath.Join(azureDir, "azureProfile.json"),
+		aliasFile:    filepath.Join(azureDir, "aliases"),
+	}, nil
 }
 
 // subscriptionAliases retrieves subscription aliases.
@@ -103,14 +114,13 @@ func (c *config) subscriptions() ([]loadedSubscriptions, error) {
 
 // getSubscriptionsFromFile reads subscriptions from the local profile file.
 func (c *config) getSubscriptionsFromFile() ([]loadedSubscriptions, error) {
-	azureProfilePath := filepath.Join(c.homeDir, ".azure", "azureProfile.json")
-	if _, err := os.Stat(azureProfilePath); err != nil {
+	if _, err := os.Stat(c.azureProfile); err != nil {
 		return nil, fmt.Errorf("unable to locate: %w", err)
 	}
 
-	file, err := os.ReadFile(azureProfilePath)
+	file, err := os.ReadFile(c.azureProfile)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read azureProfile.json: %w", err)
+		return nil, fmt.Errorf("unable to read %s: %w", c.azureProfile, err)
 	}
 
 	// The file is encoded with UTF-8 BOM for some reason.
@@ -122,6 +132,10 @@ func (c *config) getSubscriptionsFromFile() ([]loadedSubscriptions, error) {
 	}
 	if err := json.Unmarshal(file, &s); err != nil {
 		return nil, fmt.Errorf("unable to parse azureProfile.json: %w", err)
+	}
+	if len(s.Subscriptions) == 0 {
+		// %w to get the error chain. Output will be from getSubscriptionsWithCLI path and ask the user to login using az login
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return s.Subscriptions, err
@@ -148,14 +162,16 @@ func (c *config) getSubscriptionsWithCLI(ctx context.Context) ([]loadedSubscript
 		return nil, fmt.Errorf("there was an error unmarshalling Azure CLI accounts: %w", err)
 	}
 
+	// This is an actual error where we want to quit
+	loginErr := color.New(color.FgYellow)
 	if len(subscriptions) == 0 {
-		return nil, fmt.Errorf("unable to fetch any of your subscriptions with Azure CLI. Please login using 'az login'")
+		loginErr.Println("Unable to fetch any of your subscriptions with Azure CLI. Please login using 'az login'")
+		os.Exit(0)
 	}
 
 	return subscriptions, err
 }
 
-// azureCLIPath retrieves the path to the Azure CLI.
 func (c *config) azureCLIPath() (string, error) {
 	path, err := exec.LookPath("az")
 	if err != nil {
@@ -164,7 +180,6 @@ func (c *config) azureCLIPath() (string, error) {
 	return path, nil
 }
 
-// SaveAliasFile saves the alias to a file
 func (c *config) saveAliasFile(subscriptionId, alias string) error {
 	aliasFile, err := c.checkAliasFile()
 	if err != nil {
@@ -219,7 +234,6 @@ func (c *config) aliases() (map[string]string, error) {
 	return aliases, scanner.Err()
 }
 
-// checkAliasFile checks if the alias file exists and returns its path.
 func (c *config) checkAliasFile() (string, error) {
 	aliasPath := filepath.Join(c.homeDir, ".azure", "aliases")
 	if _, err := os.Stat(aliasPath); os.IsNotExist(err) {
@@ -228,7 +242,6 @@ func (c *config) checkAliasFile() (string, error) {
 	return aliasPath, nil
 }
 
-// createAliasFile creates the alias file.
 func (c *config) createAliasFile(file string) error {
 	f, err := os.Create(file)
 	if err != nil {
