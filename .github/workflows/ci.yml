@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  ci:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.1"
+
+      - name: Set version from go to makefile
+        run: |
+          version=$(cat version.go | awk -F'"' '{print $2}' | tr -d '\n' )
+          echo "Version: $version"
+          echo "AZ_WRAP=$version" >> $GITHUB_ENV
+
+      - name: Build az-wrap Release Binaries
+        run: make build-all
+
+      - name: Test
+        run: make test

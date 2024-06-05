@@ -29,3 +29,7 @@ build-darwin-amd64:
 .PHONY: build-darwin-arm64
 build-darwin-arm64:
 	GOOS=darwin GOARCH=arm64 go build -ldflags '-X "github.com/crytlig/az-wrap/version.Version=${AZ_WRAP}"' -v -o ./bin/az-wrap-${AZ_WRAP}-darwin-arm64
+
+.PHONY: test
+test:
+	go test ./...
