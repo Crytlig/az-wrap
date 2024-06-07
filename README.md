@@ -2,7 +2,7 @@
 
 Just some pretty printing and upcoming TUI work around the Azure CLI. Mostly developing it for fun... And personal usefulness
 
-## What job, exactly?
+## Why though?
 
 I work with a lot of Azure subscriptions, and in one tenant, sequence numbers or GUIDs are used instead of meaningful names.
 
